@@ -415,8 +415,11 @@ open class CameraManager: NSObject, AVCaptureFileOutputRecordingDelegate, UIGest
     /**
      Starts recording a video with or without voice as in the session preset.
      */
-    open func startRecordingVideo() {
+    open func startRecordingVideo(maxRecordedDuration: CMTime?) {
         if cameraOutputMode != .stillImage {
+            if let maxRecordedDuration = maxRecordedDuration {
+                _getMovieOutput().maxRecordedDuration = maxRecordedDuration
+            }
             _getMovieOutput().startRecording(toOutputFileURL: tempFilePath, recordingDelegate: self)
         } else {
             _show(NSLocalizedString("Capture session output still image", comment:""), message: NSLocalizedString("I can only take pictures", comment:""))
