@@ -8,6 +8,7 @@
 
 import UIKit
 import CameraManager
+import CoreMedia
 
 class ViewController: UIViewController {
     
@@ -115,7 +116,11 @@ class ViewController: UIViewController {
             sender.setTitle(" ", for: UIControlState.selected)
             sender.backgroundColor = sender.isSelected ? UIColor.red : UIColor.green
             if sender.isSelected {
-                cameraManager.startRecordingVideo()
+                let maxTime = CMTimeMake(Int64(10.0), Int32(30.0))
+                cameraManager.startRecordingVideo(maxRecordDuration: maxTime)
+                cameraManager.maximumDurationReached = { (ouputURL: URL) in
+                    debugPrint("max duration reached")
+                }
             } else {
                 cameraManager.stopVideoRecording({ (videoURL, error) -> Void in
                     if let errorOccured = error {                        

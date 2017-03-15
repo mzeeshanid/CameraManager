@@ -37,6 +37,9 @@ public enum CameraOutputQuality: Int {
 /// Class for handling iDevices custom camera usage
 open class CameraManager: NSObject, AVCaptureFileOutputRecordingDelegate, UIGestureRecognizerDelegate {
 
+    open var maximumDurationReached: ((_ outputURL: URL) -> Void)?
+    
+    
     // MARK: - Public properties
 
     /// Capture session to customize camera settings.
@@ -415,8 +418,11 @@ open class CameraManager: NSObject, AVCaptureFileOutputRecordingDelegate, UIGest
     /**
      Starts recording a video with or without voice as in the session preset.
      */
-    open func startRecordingVideo() {
+    open func startRecordingVideo(maxRecordDuration: CMTime?) {
         if cameraOutputMode != .stillImage {
+            if let maxRecordDuration = maxRecordDuration {
+                _getMovieOutput().maxRecordedDuration = maxRecordDuration
+            }
             _getMovieOutput().startRecording(toOutputFileURL: tempFilePath, recordingDelegate: self)
         } else {
             _show(NSLocalizedString("Capture session output still image", comment:""), message: NSLocalizedString("I can only take pictures", comment:""))
@@ -477,6 +483,13 @@ open class CameraManager: NSObject, AVCaptureFileOutputRecordingDelegate, UIGest
     open func capture(_ captureOutput: AVCaptureFileOutput!, didFinishRecordingToOutputFileAt outputFileURL: URL!, fromConnections connections: [Any]!, error: Error!) {
         _updateTorch(.off)
         if (error != nil) {
+            
+            let nsError = error as NSError
+            guard nsError.code != AVError.maximumDurationReached.rawValue else {
+                maximumDurationReached?(outputFileURL)
+                return
+            }
+            
             _show(NSLocalizedString("Unable to save video to the iPhone", comment:""), message: error.localizedDescription)
         } else {
 
@@ -1281,11 +1294,11 @@ open class CameraManager: NSObject, AVCaptureFileOutputRecordingDelegate, UIGest
     }
     
     open func isVideoRecording() -> Bool {
-        if cameraOutputMode != .stillImage {
-            return _getMovieOutput().isRecording
-        } else {
-            return false
+        if let runningMovieOutput = movieOutput {
+            return runningMovieOutput.isRecording
         }
+        
+        return false
     }
     
     deinit {
